@@ -84,7 +84,7 @@ class Video extends Audio
         foreach ($filters as $filter) {
             $commands = array_merge($commands, $filter->apply($this, $format));
         }
-var_dump($newCommands);
+
         $commands = array_merge($commands, $newCommands);
 
         // $commands[] = '-b:v';
