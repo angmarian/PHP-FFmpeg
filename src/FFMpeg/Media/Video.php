@@ -82,10 +82,11 @@ class Video extends Audio
             $filters->add(new SimpleFilter(array('-acodec', $format->getAudioCodec())));
         }
 
-
         foreach ($filters as $filter) {
             $commands = array_merge($commands, $filter->apply($this, $format));
         }
+
+        $commands = array_merge($commands, $newCommands);
 
         // $commands[] = '-b:v';
         // $commands[] = $format->getKiloBitrate() . 'k';
