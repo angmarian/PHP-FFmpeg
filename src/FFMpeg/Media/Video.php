@@ -14,14 +14,12 @@ namespace FFMpeg\Media;
 use Alchemy\BinaryDriver\Exception\ExecutionFailureException;
 use FFMpeg\Coordinate\TimeCode;
 use FFMpeg\Filters\Audio\SimpleFilter;
-use FFMpeg\Exception\InvalidArgumentException;
 use FFMpeg\Exception\RuntimeException;
 use FFMpeg\Filters\Video\VideoFilters;
 use FFMpeg\Filters\FilterInterface;
 use FFMpeg\Format\FormatInterface;
 use FFMpeg\Format\ProgressableInterface;
 use FFMpeg\Media\Frame;
-use Neutron\TemporaryFilesystem\Manager as FsManager;
 
 class Video extends Audio
 {
@@ -91,7 +89,7 @@ class Video extends Audio
         $commands[] = '-me_range';
         $commands[] = '16';
         $commands[] = '-subq';
-        $commands[] = '7';
+        $commands[] = '5';
         $commands[] = '-i_qfactor';
         $commands[] = '0.71';
         $commands[] = '-qcomp';
@@ -100,56 +98,81 @@ class Video extends Audio
         $commands[] = '4';
         $commands[] = '-trellis';
         $commands[] = '1';
+        $commands[] = '-ar';
+        $commands[] = '44100';
+
+        foreach ($format->getCommands() as $key => $value) {
+            $commands[] = $key;
+            $commands[] = $value;
+        }
 
         if (null !== $format->getAudioKiloBitrate()) {
             $commands[] = '-b:a';
             $commands[] = $format->getAudioKiloBitrate() . 'k';
         }
 
-        $fs = FsManager::create();
-        $fsId = uniqid('ffmpeg-passes');
-        $passPrefix = $fs->createTemporaryDirectory(0777, 50, $fsId) . '/' . uniqid('pass-');
-        $passes = array();
-        $totalPasses = $format->getPasses();
-
-        if (1 > $totalPasses) {
-            throw new InvalidArgumentException('Pass number should be a positive value.');
-        }
-
-        for ($i = 1; $i <= $totalPasses; $i++) {
-            $pass = $commands;
-
-            if ($totalPasses > 1) {
-                $pass[] = '-pass';
-                $pass[] = $i;
-                $pass[] = '-passlogfile';
-                $pass[] = $passPrefix;
-            }
-
-            $pass[] = $outputPathfile;
-
-            $passes[] = $pass;
-        }
-
         $failure = null;
 
-        foreach ($passes as $pass => $passCommands) {
+        if ($format->getPasses() == 1) {
+
+            $commands[] = $outputPathfile;
+
             try {
                 /** add listeners here */
                 $listeners = null;
 
                 if ($format instanceof ProgressableInterface) {
-                    $listeners = $format->createProgressListener($this, $this->ffprobe, $pass + 1, $totalPasses);
+                    $listeners = $format->createProgressListener($this, $this->ffprobe, 1, 1);
                 }
 
-                $this->driver->command($passCommands, false, $listeners);
+                $this->driver->command($commands, false, $listeners);
             } catch (ExecutionFailureException $e) {
                 $failure = $e;
-                break;
             }
+
+        } else {
+
+            $passPrefix = uniqid('pass-');
+
+            $pass1 = $commands;
+            $pass2 = $commands;
+
+            $pass1[] = '-pass';
+            $pass1[] = '1';
+            $pass1[] = '-passlogfile';
+            $pass1[] = $passPrefix;
+            $pass1[] = $outputPathfile;
+
+            $pass2[] = '-pass';
+            $pass2[] = '2';
+            $pass2[] = '-passlogfile';
+            $pass2[] = $passPrefix;
+            $pass2[] = $outputPathfile;
+
+            foreach (array($pass1, $pass2) as $pass => $passCommands) {
+                try {
+                    /** add listeners here */
+                    $listeners = null;
+
+                    if ($format instanceof ProgressableInterface) {
+                        $listeners = $format->createProgressListener($this, $this->ffprobe, $pass + 1, 2);
+                    }
+
+                    $this->driver->command($passCommands, false, $listeners);
+                } catch (ExecutionFailureException $e) {
+                    $failure = $e;
+                    break;
+                }
+            }
+
+            $this
+                ->cleanupTemporaryFile(getcwd() . '/' . $passPrefix . '-0.log')
+                ->cleanupTemporaryFile(getcwd() . '/' . $passPrefix . '-0.log')
+                ->cleanupTemporaryFile(getcwd() . '/' . $passPrefix . '-0.log.mbtree');
+
         }
 
-        $fs->clean($fsId);
+
 
         if (null !== $failure) {
             throw new RuntimeException('Encoding failed', $failure->getCode(), $failure);
