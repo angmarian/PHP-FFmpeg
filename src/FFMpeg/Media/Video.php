@@ -62,15 +62,26 @@ class Video extends Audio
         $filters = clone $this->filters;
         $filters->add(new SimpleFilter($format->getExtraParams(), 10));
 
+        $newCommands = array();
+        foreach ($format->getCommands() as $key => $value) {
+            $newCommands[] = $key;
+            $newCommands[] = $value;
+        }
+
         if ($this->driver->getConfiguration()->has('ffmpeg.threads')) {
             $filters->add(new SimpleFilter(array('-threads', $this->driver->getConfiguration()->get('ffmpeg.threads'))));
         }
+
+        if (!in_array('-vcodec', $newCommands))
         if (null !== $format->getVideoCodec()) {
             $filters->add(new SimpleFilter(array('-vcodec', $format->getVideoCodec())));
         }
+
+        if (!in_array('-acodec', $newCommands))
         if (null !== $format->getAudioCodec()) {
             $filters->add(new SimpleFilter(array('-acodec', $format->getAudioCodec())));
         }
+
 
         foreach ($filters as $filter) {
             $commands = array_merge($commands, $filter->apply($this, $format));
@@ -101,10 +112,6 @@ class Video extends Audio
         $commands[] = '-ar';
         $commands[] = '44100';
 
-        foreach ($format->getCommands() as $key => $value) {
-            $commands[] = $key;
-            $commands[] = $value;
-        }
 
         if (null !== $format->getAudioKiloBitrate()) {
             $commands[] = '-b:a';
