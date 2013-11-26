@@ -63,8 +63,7 @@ class Video extends Audio
         $filters->add(new SimpleFilter($format->getExtraParams(), 10));
 
         $newCommands = array();
-        foreach ($format->getCommands() as $key => $value) {
-            $newCommands[] = $key;
+        foreach ($format->getCommands() as $value) {
             $newCommands[] = $value;
         }
 
@@ -85,7 +84,7 @@ class Video extends Audio
         foreach ($filters as $filter) {
             $commands = array_merge($commands, $filter->apply($this, $format));
         }
-
+var_dump($newCommands);
         $commands = array_merge($commands, $newCommands);
 
         // $commands[] = '-b:v';
