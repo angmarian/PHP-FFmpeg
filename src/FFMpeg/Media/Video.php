@@ -111,6 +111,10 @@ class Video extends Audio
         $commands[] = '1';
         $commands[] = '-ar';
         $commands[] = '44100';
+        $commands[] = '-strict';
+        $commands[] = 'experimental';
+        $commands[] = '-ac';
+        $commands[] = '2';
 
 
         if (null !== $format->getAudioKiloBitrate()) {
