@@ -87,40 +87,6 @@ class Video extends Audio
 
         $commands = array_merge($commands, $newCommands);
 
-        // $commands[] = '-b:v';
-        // $commands[] = $format->getKiloBitrate() . 'k';
-        $commands[] = '-refs';
-        $commands[] = '6';
-        $commands[] = '-coder';
-        $commands[] = '1';
-        $commands[] = '-sc_threshold';
-        $commands[] = '40';
-        $commands[] = '-flags';
-        $commands[] = '+loop';
-        $commands[] = '-me_range';
-        $commands[] = '16';
-        $commands[] = '-subq';
-        $commands[] = '5';
-        $commands[] = '-i_qfactor';
-        $commands[] = '0.71';
-        $commands[] = '-qcomp';
-        $commands[] = '0.6';
-        $commands[] = '-qdiff';
-        $commands[] = '4';
-        $commands[] = '-trellis';
-        $commands[] = '1';
-        $commands[] = '-ar';
-        $commands[] = '44100';
-        $commands[] = '-strict';
-        $commands[] = 'experimental';
-        $commands[] = '-ac';
-        $commands[] = '2';
-
-
-        if (null !== $format->getAudioKiloBitrate()) {
-            $commands[] = '-b:a';
-            $commands[] = $format->getAudioKiloBitrate() . 'k';
-        }
 
         $failure = null;
 
